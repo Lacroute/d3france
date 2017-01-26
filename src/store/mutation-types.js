@@ -1,0 +1,10 @@
+export const UPDATE_LOCALE = 'UPDATE_LOCALE'
+export const LOAD_LOCALE   = 'LOAD_LOCALE'
+export const QUEUE_LOCALE  = 'QUEUE_LOCALE'
+export const LOCALE_LOADED = 'LOCALE_LOADED'
+export const LOCALE_ERROR  = 'LOCALE_ERROR'
+
+export const LOAD_DB       = 'LOAD_DB'
+export const LOAD_DB_ERROR = 'LOAD_DB_ERROR'
+export const UPDATE_DB     = 'UPDATE_DB'
+export const DB_LOADED     = 'DB_LOADED'
