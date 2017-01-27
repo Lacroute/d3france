@@ -7,24 +7,35 @@
       <div class="displays">
         <label for="display-mesh">
           Display Mesh
-          <input type="checkbox" name="display-mesh" v-model="displayMesh">
+          <input type="checkbox" id="display-mesh" v-model="displayMesh">
         </label>
         <label for="display-area">
           display Area
-          <input type="checkbox" name="display-area" v-model="displayArea">
+          <input type="checkbox" id="display-area" v-model="displayArea">
+        </label>
+      </div>
+
+      <div class="projections">
+        <label for="mercator">
+          Mercator
+          <input type="radio" id="mercator" value="mercator" v-model="projection">
+        </label>
+        <label for="geo-conic-conformal-france">
+          Conic Conformal France
+          <input type="radio" id="geo-conic-conformal-france" value="conicConformalFrance" v-model="projection">
         </label>
       </div>
 
       <div class="actions">
-        <button type="button" name="clearAll" @click.prevent.stop="clearAll()">CLEAR ALL</button>
-        <button type="button" name="clearGraphic" @click.prevent.stop="clearGraphic()">CLEAR GRAPHIC</button>
-        <button type="button" name="init" @click.prevent.stop="initGraph()">INIT GRAPH</button>
-        <button type="button" name="draw" @click.prevent.stop="draw()" :disabled="!canDraw">DRAW</button>
+        <button type="button" id="clearAll" @click.prevent.stop="clearAll()">CLEAR ALL</button>
+        <button type="button" id="clearGraphic" @click.prevent.stop="clearGraphic()">CLEAR GRAPHIC</button>
+        <button type="button" id="init" @click.prevent.stop="initGraph()">INIT GRAPH</button>
+        <button type="button" id="draw" @click.prevent.stop="draw()" :disabled="!canDraw">DRAW</button>
       </div>
     </div>
 
     <div class="wrapper-graph">
-      <router-view :topofile="topofile" :width="width" :height="height" :displayMesh="displayMesh" :displayArea="displayArea"></router-view>
+      <router-view :topofile="topofile" :width="width" :height="height" :displayMesh="displayMesh" :displayArea="displayArea" :projection="projection"></router-view>
     </div>
   </div>
 </template>
@@ -47,6 +58,8 @@ export default {
       width: 664,
       height: 480,
 
+      // projection: 'geoConicConformalFrance',
+      projection: 'mercator',
       displayMesh: true,
       displayArea: false,
     }
@@ -67,12 +80,17 @@ export default {
 
   watch: {
     displayMesh () {
-      this.status.CODE = STATUS.LOADED
+      this.status = STATUS.LOADED
     },
 
 
     displayArea () {
-      this.status.CODE = STATUS.LOADED
+      this.status = STATUS.LOADED
+    },
+
+
+    projection (newval) {
+      bus.$emit('clearAll')
     }
   },
 

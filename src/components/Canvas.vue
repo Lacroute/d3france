@@ -18,6 +18,7 @@ export default {
   props: {
     width: Number,
     height: Number,
+    projection: String,
     displayMesh: Boolean,
     displayArea: Boolean,
     topofile: Object,
@@ -45,7 +46,7 @@ export default {
 
   mounted () {
     console.log('*****')
-    console.log('Compute canvas execution time')
+    console.log(`Compute Canvas execution time, displayMesh: ${this.displayMesh}, displayArea: ${this.displayArea}`)
     console.time('Total')
 
     this.loadData()
@@ -101,6 +102,7 @@ export default {
     },
 
     initGraph () {
+      console.log(`initGraph for ${this.projection}`);
       console.time('initGraph')
       bus.$emit('statusUpdate', STATUS.INIT_GRAPHIC)
 
@@ -108,10 +110,13 @@ export default {
       .attr('width', this.width)
       .attr('height', this.height)
 
+      if (this.projection === 'conicConformalFrance') {
+        this._projection = d3_composite.geoConicConformalFrance().scale(2300)
+      } else if (this.projection === 'mercator') {
+        this._projection = d3.geoMercator().scale(200)
+      }
 
-      this._projection = d3_composite.geoConicConformalFrance()
-      .scale(2300)
-      .translate([this.width / 2, this.height / 2])
+      this._projection.translate([this.width / 2, this.height / 2])
 
       this._ctx = canvas.node().getContext('2d')
 
