@@ -47,7 +47,7 @@ export default {
       width: 664,
       height: 480,
 
-      displayMesh: false,
+      displayMesh: true,
       displayArea: false,
     }
   },
