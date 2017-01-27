@@ -24,7 +24,7 @@
     </div>
 
     <div class="wrapper-graph">
-      <router-view :topofile="topofile" :width="width" :height="height" :displayMesh="displayMesh" :displayArea="displayArea" :key="$route.name"></router-view>
+      <router-view :topofile="topofile" :width="width" :height="height" :displayMesh="displayMesh" :displayArea="displayArea"></router-view>
     </div>
   </div>
 </template>
@@ -47,10 +47,11 @@ export default {
       width: 664,
       height: 480,
 
-      displayMesh: true,
+      displayMesh: false,
       displayArea: false,
     }
   },
+
 
   computed: {
     canDraw () {
@@ -58,41 +59,53 @@ export default {
     }
   },
 
+
   created () {
-
-    console.log(this.$route);
-
-    bus.$on('statusUpdate', statusData => {
-      this.status = statusData
-    })
+    bus.$on('statusUpdate', this.updateStatus)
   },
+
 
   watch: {
     displayMesh () {
       this.status.CODE = STATUS.LOADED
     },
 
+
     displayArea () {
       this.status.CODE = STATUS.LOADED
     }
   },
 
+
   methods: {
+    updateStatus (newStatus) {
+      this.status = newStatus
+    },
+
+
     clearAll () {
       bus.$emit('clearAll')
     },
+
 
     clearGraphic () {
       bus.$emit('clearGraphic')
     },
 
+
     initGraph () {
       bus.$emit('initGraph')
     },
 
+
     draw () {
       bus.$emit('draw')
     },
+  },
+
+
+  destroyed () {
+    bus.$off('statusUpdate', this.updateStatus)
   }
 }
 </script>

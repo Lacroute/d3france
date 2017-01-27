@@ -62,10 +62,18 @@ export default {
 
   methods : {
     setupListener () {
-      bus.$on('clearAll', _ => this.clearAll())
-      bus.$on('clearGraphic', _ => this.clearGraphic())
-      bus.$on('initGraph', _ => this.initGraph())
-      bus.$on('draw', _ => this.draw())
+      bus.$on('clearAll', this.clearAll)
+      bus.$on('clearGraphic', this.clearGraphic)
+      bus.$on('initGraph', this.initGraph)
+      bus.$on('draw', this.draw)
+    },
+
+
+    removeListener () {
+      bus.$off('clearAll', this.clearAll)
+      bus.$off('clearGraphic', this.clearGraphic)
+      bus.$off('initGraph', this.initGraph)
+      bus.$off('draw', this.draw)
     },
 
 
@@ -164,7 +172,13 @@ export default {
       this._meshes.selectAll('*').remove()
 
       bus.$emit('statusUpdate', STATUS.GRAPHIC_READY)
-    }
+    },
+
+  },
+
+
+  destroyed () {
+    this.removeListener()
   }
 }
 </script>

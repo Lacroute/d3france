@@ -70,6 +70,15 @@ export default {
       bus.$on('draw', _ => this.draw())
     },
 
+
+    removeListener () {
+      bus.$off('clearAll', this.clearAll)
+      bus.$off('clearGraphic', this.clearGraphic)
+      bus.$off('initGraph', this.initGraph)
+      bus.$off('draw', this.draw)
+    },
+
+
     loadData () {
       bus.$emit('statusUpdate', STATUS.LOADING)
       return this.$http.get(this.topofile.url)
@@ -156,10 +165,15 @@ export default {
     },
 
     clearGraphic () {
-      this._ctx.clearRect(0, 0, width, height)
+      this._ctx.clearRect(0, 0, this.width, this.height)
 
       bus.$emit('statusUpdate', STATUS.GRAPHIC_READY)
     }
+  },
+
+
+  destroyed () {
+    this.removeListener()
   }
 }
 </script>
