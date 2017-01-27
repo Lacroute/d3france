@@ -129,9 +129,9 @@ export default {
       bus.$emit('statusUpdate', STATUS.DRAWING)
 
       this._ctx.beginPath()
-      if (this.displayMesh && this.displayArea){
+      if (this.displayArea){
         this._path(this._cities)
-      } else if (this.displayMesh) {
+      } else {
         this._path(topojson.mesh(this._topodata))
       }
 
