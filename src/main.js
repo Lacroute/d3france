@@ -14,7 +14,7 @@ Vue.use(VueI18n)
 
 const router = new VueRouter({
   routes: [
-    { path: '/', redirect: '/fr/map' },
+    { path: '/', redirect: '/fr/map/canvas' },
     {
       path: '/:lang/map',
       component: MapContainer,
