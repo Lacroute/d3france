@@ -48,6 +48,10 @@ module.exports = {
         exclude: /node_modules/
       },
       {
+        test: /worker\.js$/,
+        loader: 'worker'
+      },
+      {
         test: /\.json$/,
         loader: 'json'
       },
