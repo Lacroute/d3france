@@ -37,6 +37,7 @@ export default {
       _ctx: null,
       _areas: null,
       _meshes: null,
+      _zoom: null,
 
       minZ: 0,
     }
@@ -66,6 +67,7 @@ export default {
   },
 
 
+  // Global initiation
   mounted () {
     console.log('*****')
     console.log(`Compute Canvas execution time, displayMesh: ${this.displayMesh}, displayArea: ${this.displayArea}`)
@@ -76,7 +78,7 @@ export default {
       this.initGraph()
     })
     .then( _ => {
-      this.handleZoom()
+      // this.handleZoom()
     })
     .then( _ => {
       this.center()
@@ -89,6 +91,8 @@ export default {
 
 
   methods : {
+
+    // Bus initialisation for interface event. See MapContainer.vue
     setupListener () {
       bus.$on('clearAll', _ => this.clearAll())
       bus.$on('clearGraphic', _ => this.clearGraphic())
@@ -97,6 +101,7 @@ export default {
     },
 
 
+    // Need to remove listeners on destruct.
     removeListener () {
       bus.$off('clearAll', this.clearAll)
       bus.$off('clearGraphic', this.clearGraphic)
@@ -105,6 +110,7 @@ export default {
     },
 
 
+    // Asynchronous loading of data file. See src/utils/fileConfig.js
     loadData () {
       bus.$emit('statusUpdate', STATUS.LOADING)
       return this.$http.get(this.topofile.url)
@@ -115,6 +121,7 @@ export default {
     },
 
 
+    // Map loaded data with topojson and store it.
     populate (topojsonData) {
       console.time('populate')
 
@@ -129,13 +136,14 @@ export default {
       this._meshes = topojson.mesh(
         topojsonData,
         topojsonData.objects[this.topofile.key],
-        (a, b) => a !== b // don't draw a border twice
+        (a, b) => a !== b // don't draw external borders
       )
 
       console.timeEnd('populate')
     },
 
 
+    // Main initialisation for d3
     initGraph () {
       console.time('initGraph')
       bus.$emit('statusUpdate', STATUS.INIT_GRAPHIC)
@@ -152,25 +160,26 @@ export default {
       })
       .context(this._ctx)
 
+      this.handleZoom()
+
       bus.$emit('statusUpdate', STATUS.GRAPHIC_READY)
       console.timeEnd('initGraph')
     },
 
 
+    // Zoom Handler.
     handleZoom () {
       console.time('handleZoom')
-      this._canvas.call(this.zoom())
+      this._zoom = d3.zoom()
+      .scaleExtent([1 / (1 << 5), 1 << 4])
+      .on('zoom', this.onZoom)
+
+      this._canvas.call(this._zoom)
       console.timeEnd('handleZoom')
     },
 
 
-    zoom () {
-      return d3.zoom()
-      .scaleExtent([1 / (1 << 5), 1 << 4])
-      .on('zoom', this.onZoom)
-    },
-
-
+    // Zoom function
     onZoom () {
       let t = d3.event.transform
       this.minZ = 1 / (t.k * t.k)
@@ -180,11 +189,12 @@ export default {
     },
 
 
+    // Subjective centering.
     center () {
       console.time('center')
       this._canvas
       .call(
-        this.zoom().transform,
+        this._zoom.transform,
         d3.zoomIdentity
         .scale(0.5)
         .translate(this.width / 2, 0)
@@ -193,11 +203,13 @@ export default {
     },
 
 
+    // Main drawing function.
     draw () {
       console.time('draw')
       bus.$emit('statusUpdate', STATUS.DRAWING)
       this._ctx.clearRect(0, 0, this.width, this.height);
 
+      // TODO: find another way to paint.
       // if (this.displayArea) {
           // this._ctx.beginPath()
           // this._path(this._areas)
@@ -218,21 +230,22 @@ export default {
     },
 
 
+    // Clear all objects.
     clearAll () {
-      this.clearGraphic()
+      this._ctx.clearRect(0, 0, this.width, this.height)
+      this._zoom.on('zoom', null)
 
       this._projection = null
       this._simplify = null
       this._path = null
       this._canvas = null,
       this._ctx = null
-      this._areas = null
-      this._meshes = null
 
       bus.$emit('statusUpdate', STATUS.LOADED)
     },
 
 
+    // Clear canvas only.
     clearGraphic () {
       this._ctx.clearRect(0, 0, this.width, this.height)
 

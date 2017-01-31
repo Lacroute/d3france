@@ -3,7 +3,7 @@
     <header>
       <ul class="three">
         <li><router-link :to="{name: 'canvas'}">Canvas</router-link></li>
-        <li><router-link :to="{name: 'svg'}">Svg</router-link></li>
+        <!-- <li><router-link :to="{name: 'svg'}">Svg</router-link></li> -->
       </ul>
     </header>
 
