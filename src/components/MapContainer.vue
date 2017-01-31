@@ -11,7 +11,7 @@
         </label>
         <label for="display-area">
           display Area
-          <input type="checkbox" id="display-area" v-model="displayArea">
+          <input type="checkbox" id="display-area" v-model="displayArea" disabled>
         </label>
       </div>
 
@@ -22,7 +22,7 @@
         </label>
         <label for="geo-conic-conformal-france">
           Conic Conformal France
-          <input type="radio" id="geo-conic-conformal-france" value="conicConformalFrance" v-model="projection">
+          <input type="radio" id="geo-conic-conformal-france" value="conicConformalFrance" v-model="projection" disabled>
         </label>
       </div>
 
@@ -61,7 +61,7 @@ export default {
       // projection: 'geoConicConformalFrance',
       projection: 'mercator',
       displayMesh: true,
-      displayArea: true,
+      displayArea: false,
     }
   },
 
