@@ -2,3 +2,5 @@
 node_modules/
 dist/
 npm-debug.log
+static/maps/ign.metropole/shp/
+static/maps/ign.metropole/tmp/
