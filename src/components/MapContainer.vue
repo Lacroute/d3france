@@ -7,7 +7,7 @@
       <div class="displays">
         <label for="display-mesh">
           Display Mesh
-          <input type="checkbox" id="display-mesh" v-model="displayMesh">
+          <input type="checkbox" id="display-mesh" v-model="displayMesh" disabled>
         </label>
         <label for="display-area">
           display Area
@@ -18,11 +18,30 @@
       <div class="projections">
         <label for="mercator">
           Mercator
-          <input type="radio" id="mercator" value="mercator" v-model="projection">
+          <input type="radio" id="mercator" value="mercator" name="projection" v-model="projection">
         </label>
         <label for="geo-conic-conformal-france">
           Conic Conformal France
-          <input type="radio" id="geo-conic-conformal-france" value="conicConformalFrance" v-model="projection" disabled>
+          <input type="radio" id="geo-conic-conformal-france" value="conicConformalFrance" name="projection" v-model="projection" disabled>
+        </label>
+      </div>
+
+      <div class="mode">
+        <label for="auto">
+          Auto
+          <input type="radio" id="auto" name="mode" value="auto" v-model="mode">
+        </label>
+        <label for="communes">
+          Communes
+          <input type="radio" id="communes" name="mode" value="communes" v-model="mode">
+        </label>
+        <label for="departements">
+          Départements
+          <input type="radio" id="departements" name="mode" value="departements" v-model="mode">
+        </label>
+        <label for="regions">
+          Régions
+          <input type="radio" id="regions" name="mode" value="regions" v-model="mode">
         </label>
       </div>
 
@@ -35,7 +54,7 @@
     </div>
 
     <div class="wrapper-graph">
-      <router-view :topofile="topofile" :width="width" :height="height" :displayMesh="displayMesh" :displayArea="displayArea" :projection="projection"></router-view>
+      <router-view :topofile="topofile" :width="width" :height="height" :displayMesh="displayMesh" :displayArea="displayArea" :projection="projection" :mode="mode"></router-view>
     </div>
   </div>
 </template>
@@ -53,15 +72,16 @@ export default {
     return {
       status: {CODE: null, TEXT: null},
 
-      topofile: FILES_CONFIG.communes,
+      topofile: FILES_CONFIG.communesFull,
 
       width: 664,
       height: 480,
 
       // projection: 'geoConicConformalFrance',
       projection: 'mercator',
+      mode: 'departements',
       displayMesh: true,
-      displayArea: false,
+      displayArea: true,
     }
   },
 
@@ -89,9 +109,9 @@ export default {
     },
 
 
-    projection (newval) {
+    projection () {
       bus.$emit('clearAll')
-    }
+    },
   },
 
 
