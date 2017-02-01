@@ -19,6 +19,7 @@ export default {
     width: Number,
     height: Number,
     projection: String,
+    mode: String,
     displayMesh: Boolean,
     displayArea: Boolean,
     topofile: Object,
@@ -27,17 +28,19 @@ export default {
   // Prefix with '_' for data attribute disable the two way binding.
   data () {
     return {
-      _topodata: null,
-      _cities: null,
-
       _projection: null,
       _simplify: null,
       _path: null,
       _canvas: null,
       _ctx: null,
-      _areas: null,
-      _meshes: null,
       _zoom: null,
+
+      _communes: null,
+      _communesMeshes: null,
+      _dpts: null,
+      _dptsMeshes: null,
+      _regs: null,
+      _regsMeshes: null,
 
       minZ: 0,
     }
@@ -55,10 +58,55 @@ export default {
       })
     },
 
+
     transform () {
       return d3.geoIdentity()
       .clipExtent([[0, 0], [this.width, this.height]])
     },
+
+
+    // Current Stroke set in action.
+    strokeWrapper () {
+      let stroke
+      if (this.mode === 'regions') {
+        stroke = this._regsMeshes
+
+      } else if (this.mode === 'departements') {
+        stroke = this._dptsMeshes
+
+      } else if (this.mode === 'communes') {
+        stroke = this._communesMeshes
+
+      } else if (this.mode === 'auto') {
+        stroke = this._regsMeshes
+
+        if (this.minZ <= 0.05) {
+          stroke = this._communes
+
+        } else if (this.minZ <= 0.5) {
+          stroke = this._dptsMeshes
+        }
+      }
+
+      return stroke
+    },
+
+
+    // Current Fill set in action.
+    fillWrapper () {
+      let fill
+      if (this.mode === 'regions') {
+        fill = this._regs
+      } else if (this.mode === 'departements') {
+        fill = this._dpts
+      } else if (this.mode === 'communes') {
+        fill = this._communes
+      } else if (this.mode === 'auto') {
+        fill = this._regs
+      }
+
+      return fill
+    }
   },
 
 
@@ -78,15 +126,19 @@ export default {
       this.initGraph()
     })
     .then( _ => {
-      // this.handleZoom()
-    })
-    .then( _ => {
       this.center()
     })
     .then( _ => {
       console.timeEnd('Total')
       console.log('*****')
     })
+  },
+
+
+  watch: {
+    mode () {
+      this.draw()
+    },
   },
 
 
@@ -98,6 +150,7 @@ export default {
       bus.$on('clearGraphic', _ => this.clearGraphic())
       bus.$on('initGraph', _ => this.initGraph())
       bus.$on('draw', _ => this.draw())
+      bus.$on('result', (vote) => this.handleResult(vote))
     },
 
 
@@ -107,6 +160,7 @@ export default {
       bus.$off('clearGraphic', this.clearGraphic)
       bus.$off('initGraph', this.initGraph)
       bus.$off('draw', this.draw)
+      bus.$on('result', _ => this.handleResult)
     },
 
 
@@ -125,21 +179,45 @@ export default {
     populate (topojsonData) {
       console.time('populate')
 
-      this._topodata = topojsonData
       topojson.presimplify(topojsonData)
 
-      this._areas = topojson.feature(
+      this._communes = topojson.feature(
         topojsonData,
         topojsonData.objects[this.topofile.key]
       )
 
-      this._meshes = topojson.mesh(
+      this._communesMeshes = topojson.mesh(
         topojsonData,
         topojsonData.objects[this.topofile.key],
         (a, b) => a !== b // don't draw external borders
       )
 
+      this._dpts = this.populateGroup(topojsonData, 'dpt')
+      this._dptsMeshes = this.populateMeshes(topojsonData, 'dpt')
+
+      this._regs = this.populateGroup(topojsonData, 'reg')
+      this._regsMeshes = this.populateMeshes(topojsonData, 'reg')
+
       console.timeEnd('populate')
+    },
+
+
+    // Helper to group by a `keyFilter` and merge the polygons.
+    populateGroup (topojsonData, keyFilter) {
+      return d3.nest()
+      .key(d => d[keyFilter])
+      .rollup(group => topojson.merge(topojsonData, group))
+      .entries(topojsonData.objects[this.topofile.key].geometries)
+    },
+
+
+    // Helper to group by a `keyFilter` and unify the meshes.
+    populateMeshes (topojsonData, keyFilter) {
+      return topojson.mesh(
+        topojsonData,
+        topojsonData.objects[this.topofile.key],
+        (a, b) => a[keyFilter] !== b[keyFilter]
+      )
     },
 
 
@@ -171,7 +249,7 @@ export default {
     handleZoom () {
       console.time('handleZoom')
       this._zoom = d3.zoom()
-      .scaleExtent([1 / (1 << 5), 1 << 4])
+      .scaleExtent([1 / (1 << 5), 1 << 5])
       .on('zoom', this.onZoom)
 
       this._canvas.call(this._zoom)
@@ -209,24 +287,45 @@ export default {
       bus.$emit('statusUpdate', STATUS.DRAWING)
       this._ctx.clearRect(0, 0, this.width, this.height);
 
-      // TODO: find another way to paint.
-      // if (this.displayArea) {
-          // this._ctx.beginPath()
-          // this._path(this._areas)
-          // this._ctx.fillStyle = '#3c3c3b'
-          // this._ctx.fill()
-      // }
-
-      if (this.displayMesh) {
-          this._ctx.beginPath()
-          this._path(this._meshes)
-          this._ctx.lineWidth = '.2'
-          this._ctx.strokeStyle = '#efad01'
-          this._ctx.stroke()
-      }
+      this.fill(this.fillWrapper)
+      this.stroke(this.strokeWrapper)
 
       bus.$emit('statusUpdate', STATUS.COMPLETE)
       console.timeEnd('draw')
+    },
+
+
+    // Fill the polygons.
+    fill(fillWrapper) {
+      this._ctx.beginPath()
+      this._ctx.fillStyle = '#3c3c3b'
+      if (fillWrapper.length !== undefined) {
+        // GroupBy case (departements, regions)
+        fillWrapper.map( group => {
+          this._path(group.value)
+        })
+      } else {
+        // Communes case
+        this._path(fillWrapper)
+      }
+      this._ctx.fill()
+    },
+
+
+    // Draw the strokes.
+    stroke (strokeWrapper) {
+      if (this.displayMesh) {
+        this._ctx.beginPath()
+        this._path(strokeWrapper)
+        this._ctx.lineWidth = '.2'
+        this._ctx.strokeStyle = '#efad01'
+        this._ctx.stroke()
+      }
+    },
+
+
+    handleResult (vote) {
+      console.log('vote received', vote)
     },
 
 
