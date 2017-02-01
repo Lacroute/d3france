@@ -45,6 +45,19 @@
         </label>
       </div>
 
+      <div class="control data">
+        <label for="update">
+          Auto update
+          <input type="checkbox" id="update" name="update" v-model="autoUpdate">
+        </label>
+
+        <label for="updateInterval" v-show="autoUpdate">
+          Frequency ({{ intervalTime }} ms)
+          <input type="range" id="updateInterval" name="updateInterval"  min="0" max="3000" step="200" v-model="intervalTime">
+        </label>
+
+      </div>
+
       <div class="control actions">
         <button type="button" id="clearAll" @click.prevent.stop="clearAll()">CLEAR ALL</button>
         <button type="button" id="clearGraphic" @click.prevent.stop="clearGraphic()">CLEAR GRAPHIC</button>
@@ -63,7 +76,8 @@
 import bus from 'emitter'
 import * as STATUS from 'utils/graphicStatus'
 import * as FILES_CONFIG from 'utils/filesConfig'
-
+import * as politicsList from 'utils/politicsConfig'
+import communesList from 'assets/insee.list.json'
 
 export default {
   name: 'MapContainer',
@@ -82,6 +96,11 @@ export default {
       mode: 'departements',
       displayMesh: true,
       displayArea: true,
+
+      autoUpdate: false,
+      intervalTime: 1000,
+
+      politics: []
     }
   },
 
@@ -95,6 +114,8 @@ export default {
 
   created () {
     bus.$on('statusUpdate', this.updateStatus)
+
+    this.politics = Object.keys(politicsList).map(key => politicsList[key])
   },
 
 
@@ -112,12 +133,64 @@ export default {
     projection () {
       bus.$emit('clearAll')
     },
+
+    autoUpdate (active) {
+      if(active) {
+        this.createInterval()
+      } else {
+        this.deleteInterval()
+      }
+    },
+
+    intervalTime () {
+      console.log('intervalTime');
+      this.deleteInterval()
+      this.createInterval()
+    }
   },
 
 
   methods: {
     updateStatus (newStatus) {
       this.status = newStatus
+    },
+
+
+    createInterval () {
+      this.interval = setInterval(
+        _ => {
+          this.sendResult()
+        },
+        this.intervalTime
+      )
+    },
+
+
+    deleteInterval () {
+      clearInterval(this.interval)
+    },
+
+
+    createFakeResult () {
+      let randomIndex = this.randomIndex(communesList.length)
+      let commune = communesList[randomIndex]
+      communesList.splice(randomIndex, 1)
+
+      return {
+        type: 'commune',
+        id: commune.id,
+        winner: this.politics[this.randomIndex(this.politics.length)]
+      }
+    },
+
+
+    sendResult () {
+      bus.$emit('result', this.createFakeResult())
+    },
+
+
+    randomIndex (length) {
+      return Math.floor( Math.random() * length)
     },
 
 

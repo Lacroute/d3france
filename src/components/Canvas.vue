@@ -150,6 +150,7 @@ export default {
       bus.$on('clearGraphic', _ => this.clearGraphic())
       bus.$on('initGraph', _ => this.initGraph())
       bus.$on('draw', _ => this.draw())
+      bus.$on('result', (vote) => this.handleResult(vote))
     },
 
 
@@ -159,6 +160,7 @@ export default {
       bus.$off('clearGraphic', this.clearGraphic)
       bus.$off('initGraph', this.initGraph)
       bus.$off('draw', this.draw)
+      bus.$on('result', _ => this.handleResult)
     },
 
 
@@ -319,6 +321,11 @@ export default {
         this._ctx.strokeStyle = '#efad01'
         this._ctx.stroke()
       }
+    },
+
+
+    handleResult (vote) {
+      console.log('vote received', vote)
     },
 
 
