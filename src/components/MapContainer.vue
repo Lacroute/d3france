@@ -4,7 +4,7 @@
 
     <div class="controls" >
 
-      <div class="displays">
+      <div class="control displays" v-if="false">
         <label for="display-mesh">
           Display Mesh
           <input type="checkbox" id="display-mesh" v-model="displayMesh" disabled>
@@ -15,7 +15,7 @@
         </label>
       </div>
 
-      <div class="projections">
+      <div class="control projections">
         <label for="mercator">
           Mercator
           <input type="radio" id="mercator" value="mercator" name="projection" v-model="projection">
@@ -26,7 +26,7 @@
         </label>
       </div>
 
-      <div class="mode">
+      <div class="control mode">
         <label for="auto">
           Auto
           <input type="radio" id="auto" name="mode" value="auto" v-model="mode">
@@ -45,7 +45,7 @@
         </label>
       </div>
 
-      <div class="actions">
+      <div class="control actions">
         <button type="button" id="clearAll" @click.prevent.stop="clearAll()">CLEAR ALL</button>
         <button type="button" id="clearGraphic" @click.prevent.stop="clearGraphic()">CLEAR GRAPHIC</button>
         <button type="button" id="init" @click.prevent.stop="initGraph()">INIT GRAPH</button>
@@ -160,10 +160,11 @@ export default {
 }
 
 .controls{
+  padding-bottom: 2em;
   border-bottom: 2px solid $grey-neutral-4;
 
-  .actions{
-    margin: 20px;
+  .control + .control{
+    margin-top: 1.5em;
   }
 }
 
