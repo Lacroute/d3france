@@ -5,11 +5,12 @@
 </template>
 
 <script>
+import bus from 'emitter'
 import * as d3 from 'd3'
 import * as d3_composite from 'd3-composite-projections'
 import * as topojson from 'topojson'
 import * as STATUS from 'utils/graphicStatus'
-import bus from 'emitter'
+import * as politicsList from 'utils/politicsConfig'
 
 
 export default {
@@ -19,7 +20,7 @@ export default {
     width: Number,
     height: Number,
     projection: String,
-    mode: String,
+    mode: Number,
     displayMesh: Boolean,
     displayArea: Boolean,
     topofile: Object,
@@ -28,21 +29,21 @@ export default {
   // Prefix with '_' for data attribute disable the two way binding.
   data () {
     return {
+      _topojsonData: null,
+
       _projection: null,
       _simplify: null,
       _path: null,
       _canvas: null,
       _ctx: null,
       _zoom: null,
+      minZ: 0,
 
-      _communes: null,
       _communesMeshes: null,
-      _dpts: null,
       _dptsMeshes: null,
-      _regs: null,
       _regsMeshes: null,
 
-      minZ: 0,
+      politics: null,
     }
   },
 
@@ -51,7 +52,7 @@ export default {
     simplify () {
       let minZ = this.minZ
       return d3.geoTransform({
-        point: function(x, y, z) {
+        point (x, y, z) {
           if (z >= minZ)
           this.stream.point(x, y)
         }
@@ -59,33 +60,40 @@ export default {
     },
 
 
+    //
     transform () {
       return d3.geoIdentity()
       .clipExtent([[0, 0], [this.width, this.height]])
     },
 
 
-    // Current Stroke set in action.
-    strokeWrapper () {
-      let stroke
-      if (this.mode === 'regions') {
-        stroke = this._regsMeshes
-
-      } else if (this.mode === 'departements') {
-        stroke = this._dptsMeshes
-
-      } else if (this.mode === 'communes') {
-        stroke = this._communesMeshes
-
-      } else if (this.mode === 'auto') {
-        stroke = this._regsMeshes
-
+    // Reactive mode function of scroll depth
+    currentMode () {
+      let m = this.mode
+      if (m === STATUS.MODE.AUTO) {
+        m = STATUS.MODE.REGION
         if (this.minZ <= 0.05) {
-          stroke = this._communes
+          m = STATUS.MODE.TOWN
 
         } else if (this.minZ <= 0.5) {
-          stroke = this._dptsMeshes
+          m = STATUS.MODE.DEPARTMENT
         }
+      }
+
+      return m
+    },
+
+
+    // Current Stroke set in action.
+    strokeWrapper () {
+      let stroke = this._regsMeshes
+
+      if (this.currentMode === STATUS.MODE.DEPARTMENT) {
+        stroke = this._dptsMeshes
+
+      } else if (this.currentMode === STATUS.MODE.TOWN) {
+        stroke = this._communesMeshes
+
       }
 
       return stroke
@@ -95,23 +103,29 @@ export default {
     // Current Fill set in action.
     fillWrapper () {
       let fill
-      if (this.mode === 'regions') {
+      if (this.mode === STATUS.MODE.REGION) {
         fill = this._regs
-      } else if (this.mode === 'departements') {
+      } else if (this.mode === STATUS.MODE.DEPARTMENT) {
         fill = this._dpts
-      } else if (this.mode === 'communes') {
+      } else if (this.mode === STATUS.MODE.TOWN) {
         fill = this._communes
-      } else if (this.mode === 'auto') {
+      } else if (this.mode === STATUS.MODE.AUTO) {
         fill = this._regs
       }
 
       return fill
+    },
+
+
+    background () {
+      return topojson.merge(this._topojsonData, this._topojsonData.objects[this.topofile.key].geometries)
     }
   },
 
 
   created () {
     this.setupListener()
+    this.initPolitics()
   },
 
 
@@ -135,6 +149,7 @@ export default {
   },
 
 
+  // If the mode change, do a draw cycle.
   watch: {
     mode () {
       this.draw()
@@ -150,7 +165,7 @@ export default {
       bus.$on('clearGraphic', _ => this.clearGraphic())
       bus.$on('initGraph', _ => this.initGraph())
       bus.$on('draw', _ => this.draw())
-      bus.$on('result', (vote) => this.handleResult(vote))
+      bus.$on('result', this.handleResult)
     },
 
 
@@ -160,7 +175,22 @@ export default {
       bus.$off('clearGraphic', this.clearGraphic)
       bus.$off('initGraph', this.initGraph)
       bus.$off('draw', this.draw)
-      bus.$on('result', _ => this.handleResult)
+      bus.$off('result', this.handleResult)
+    },
+
+
+    // Init data storage.
+    initPolitics () {
+      this.politics = new Map()
+      Object.keys(politicsList).map( p => {
+        let test = politicsList[p]
+        test = politicsList[p]
+        test.communes = d3.set()
+        test.dpts = []
+        test.regs = []
+        test.communesFill = []
+        this.politics.set(p, test)
+      })
     },
 
 
@@ -180,11 +210,7 @@ export default {
       console.time('populate')
 
       topojson.presimplify(topojsonData)
-
-      this._communes = topojson.feature(
-        topojsonData,
-        topojsonData.objects[this.topofile.key]
-      )
+      this._topojsonData = topojsonData
 
       this._communesMeshes = topojson.mesh(
         topojsonData,
@@ -192,11 +218,25 @@ export default {
         (a, b) => a !== b // don't draw external borders
       )
 
-      this._dpts = this.populateGroup(topojsonData, 'dpt')
-      this._dptsMeshes = this.populateMeshes(topojsonData, 'dpt')
+      this._dptsMeshes = this.populateMeshes(
+        topojsonData,
+        (a, b) => a.dpt !== b.dpt
+      )
 
-      this._regs = this.populateGroup(topojsonData, 'reg')
-      this._regsMeshes = this.populateMeshes(topojsonData, 'reg')
+      this._regsMeshes = this.populateMeshes(
+        topojsonData,
+        (a, b) => a.reg !== b.reg
+      )
+
+      // TODO: store areas for each candidate
+      // this._communes = topojson.feature(
+      //   topojsonData,
+      //   topojsonData.objects[this.topofile.key]
+      // )
+
+      // this._dpts = this.populateGroup(topojsonData, 'dpt')
+
+      // this._regs = this.populateGroup(topojsonData, 'reg')
 
       console.timeEnd('populate')
     },
@@ -212,11 +252,11 @@ export default {
 
 
     // Helper to group by a `keyFilter` and unify the meshes.
-    populateMeshes (topojsonData, keyFilter) {
+    populateMeshes (topojsonData, filterFunction) {
       return topojson.mesh(
         topojsonData,
         topojsonData.objects[this.topofile.key],
-        (a, b) => a[keyFilter] !== b[keyFilter]
+        filterFunction
       )
     },
 
@@ -288,7 +328,7 @@ export default {
       this._ctx.clearRect(0, 0, this.width, this.height);
 
       this.fill(this.fillWrapper)
-      this.stroke(this.strokeWrapper)
+      // this.stroke(this.strokeWrapper)
 
       bus.$emit('statusUpdate', STATUS.COMPLETE)
       console.timeEnd('draw')
@@ -298,34 +338,84 @@ export default {
     // Fill the polygons.
     fill(fillWrapper) {
       this._ctx.beginPath()
-      this._ctx.fillStyle = '#3c3c3b'
-      if (fillWrapper.length !== undefined) {
-        // GroupBy case (departements, regions)
-        fillWrapper.map( group => {
-          this._path(group.value)
-        })
-      } else {
-        // Communes case
-        this._path(fillWrapper)
-      }
+      this._path(this.background)
+      this._ctx.fillStyle = 'white'
       this._ctx.fill()
+
+      this.politics.forEach((p, key) => {
+        this._ctx.beginPath()
+        this._ctx.fillStyle = p.color
+        this._path(p.communesFill)
+        this._ctx.fill()
+      })
     },
 
 
     // Draw the strokes.
-    stroke (strokeWrapper) {
-      if (this.displayMesh) {
-        this._ctx.beginPath()
-        this._path(strokeWrapper)
-        this._ctx.lineWidth = '.2'
-        this._ctx.strokeStyle = '#efad01'
-        this._ctx.stroke()
-      }
+    stroke (strokeWrapper, color = STATUS.COLORS.BORDER, width = '.2') {
+      this._ctx.beginPath()
+      this._path(strokeWrapper)
+      this._ctx.lineWidth = width
+      this._ctx.strokeStyle = color
+      this._ctx.stroke()
     },
 
 
+    // Main result handler
     handleResult (vote) {
-      console.log('vote received', vote)
+      console.log('vote received')
+
+      let key = 'id'
+      if (this.currentMode === STATUS.MODE.REGION){
+        key = 'reg'
+      } else if (this.currentMode === STATUS.MODE.DEPARTMENT) {
+        key = 'dpt'
+      }
+
+      let resultArea = topojson.merge(
+        this._topojsonData,
+        this._topojsonData.objects[this.topofile.key].geometries.filter(d => d[key] === vote.selected[key])
+      )
+
+      this.updateCandidate(vote.winner, vote.selected)
+
+      this.blink(resultArea, this.politics.get(vote.winner).color, '.4')
+    },
+
+
+    // Store new commune for a candidate
+    updateCandidate (candidate, commune) {
+      let updated = this.politics.get(candidate)
+      updated.communes.add(commune.id)
+
+      updated.communesFill = topojson.merge(
+        this._topojsonData,
+        this._topojsonData.objects[this.topofile.key].geometries.filter(d => updated.communes.has(d.id))
+      )
+
+      this.politics.set(candidate, updated)
+    },
+
+
+    // Paint a stroke, wait, and then do a draw cycle
+    blink (resultArea, color, width) {
+      let pStroke = _ => {
+        return new Promise( (resolve, reject) => {
+          this.stroke(resultArea, color, width)
+          resolve()
+        })
+      }
+
+      let pReset = _ => {
+        return new Promise( (resolve, reject) => {
+          setTimeout( _ => {
+            this.draw()
+            resolve()
+          }, 200)
+        })
+      }
+
+      pStroke().then(_ => pReset())
     },
 
 

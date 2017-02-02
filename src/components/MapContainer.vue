@@ -29,19 +29,19 @@
       <div class="control mode">
         <label for="auto">
           Auto
-          <input type="radio" id="auto" name="mode" value="auto" v-model="mode">
-        </label>
-        <label for="communes">
-          Communes
-          <input type="radio" id="communes" name="mode" value="communes" v-model="mode">
-        </label>
-        <label for="departements">
-          Départements
-          <input type="radio" id="departements" name="mode" value="departements" v-model="mode">
+          <input type="radio" id="auto" name="mode" :value="0" v-model="mode">
         </label>
         <label for="regions">
           Régions
-          <input type="radio" id="regions" name="mode" value="regions" v-model="mode">
+          <input type="radio" id="regions" name="mode" :value="1" v-model="mode">
+        </label>
+        <label for="departements">
+          Départements
+          <input type="radio" id="departements" name="mode" :value="2" v-model="mode">
+        </label>
+        <label for="communes">
+          Communes
+          <input type="radio" id="communes" name="mode" :value="3" v-model="mode">
         </label>
       </div>
 
@@ -88,19 +88,19 @@ export default {
 
       topofile: FILES_CONFIG.communesFull,
 
-      width: 664,
+      width: 1000,
       height: 480,
 
       // projection: 'geoConicConformalFrance',
       projection: 'mercator',
-      mode: 'departements',
+      mode: 0,
       displayMesh: true,
       displayArea: true,
 
       autoUpdate: false,
-      intervalTime: 1000,
+      intervalTime: 3000,
 
-      politics: []
+      politics: {}
     }
   },
 
@@ -115,7 +115,9 @@ export default {
   created () {
     bus.$on('statusUpdate', this.updateStatus)
 
-    this.politics = Object.keys(politicsList).map(key => politicsList[key])
+    Object.keys(politicsList).map( p => {
+      this.politics[p] = politicsList[p]
+    })
   },
 
 
@@ -172,14 +174,17 @@ export default {
 
 
     createFakeResult () {
+      if(communesList.length === 1) this.deleteInterval()
       let randomIndex = this.randomIndex(communesList.length)
       let commune = communesList[randomIndex]
       communesList.splice(randomIndex, 1)
 
+      let politicsKeys = Object.keys(this.politics)
+
       return {
-        type: 'commune',
-        id: commune.id,
-        winner: this.politics[this.randomIndex(this.politics.length)]
+        mode: STATUS.MODE.TOWN,
+        selected: commune,
+        winner: politicsKeys[this.randomIndex(politicsKeys.length)]
       }
     },
 
@@ -246,7 +251,7 @@ export default {
   background: $grey-neutral-1;
 
   svg, canvas{
-    background: white;
+    background: transparent;
     border: 1px solid $grey-neutral-2;
   }
 
