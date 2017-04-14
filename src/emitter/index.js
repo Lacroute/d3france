@@ -1,5 +1,5 @@
 import Vue from 'vue'
 
-const EventEmitter = new Vue();
+const EventEmitter = new Vue()
 
-export default EventEmitter;
+export default EventEmitter

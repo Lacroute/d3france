@@ -27,15 +27,36 @@ module.exports = {
       'src': path.resolve(__dirname, '../src'),
       'assets': path.resolve(__dirname, '../src/assets'),
       'api': path.resolve(__dirname, '../src/api'),
+      'styles': path.resolve(__dirname, '../src/styles'),
       'utils': path.resolve(__dirname, '../src/utils'),
+      'supported': path.resolve(__dirname, '../src/supported'),
       'emitter': path.resolve(__dirname, '../src/emitter'),
-      'components': path.resolve(__dirname, '../src/components')
+      'components': path.resolve(__dirname, '../src/components'),
+      'static': path.resolve(__dirname, '../static')
     }
   },
   resolveLoader: {
     fallback: [path.join(__dirname, '../node_modules')]
   },
   module: {
+    preLoaders: [
+      {
+        test: /\.vue$/,
+        loader: 'eslint',
+        include: [
+          path.join(projectRoot, 'src')
+        ],
+        exclude: /node_modules/
+      },
+      {
+        test: /\.js$/,
+        loader: 'eslint',
+        include: [
+          path.join(projectRoot, 'src')
+        ],
+        exclude: /node_modules/
+      }
+    ],
     loaders: [
       {
         test: /\.vue$/,
@@ -92,10 +113,10 @@ list.map( val => {
   if(obj[val[0]] === undefined) obj[val[0]] = []
   obj[val[0]].push(val[1])
 })
-let file = 'export const BROWSERLIST = ' + JSON.stringify(obj) + '\n'
+let file = 'export default ' + JSON.stringify(obj) + ' \n'
 
 require('fs').writeFile(
-  path.resolve(__dirname, '../src/utils/supported.js'),
+  path.resolve(__dirname, '../src/supported/index.js'),
   file,
   function(err) {
     if(err) {

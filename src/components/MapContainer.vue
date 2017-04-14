@@ -1,269 +1,130 @@
 <template>
-  <div>
-    <p class="status">status: {{ status.TEXT }} </p>
-
-    <div class="controls" >
-
-      <div class="control displays" v-if="false">
-        <label for="display-mesh">
-          Display Mesh
-          <input type="checkbox" id="display-mesh" v-model="displayMesh" disabled>
-        </label>
-        <label for="display-area">
-          display Area
-          <input type="checkbox" id="display-area" v-model="displayArea" disabled>
-        </label>
-      </div>
-
-      <div class="control projections">
-        <label for="mercator">
-          Mercator
-          <input type="radio" id="mercator" value="mercator" name="projection" v-model="projection">
-        </label>
-        <label for="geo-conic-conformal-france">
-          Conic Conformal France
-          <input type="radio" id="geo-conic-conformal-france" value="conicConformalFrance" name="projection" v-model="projection" disabled>
-        </label>
-      </div>
-
-      <div class="control mode">
-        <label for="auto">
-          Auto
-          <input type="radio" id="auto" name="mode" :value="0" v-model="mode">
-        </label>
-        <label for="regions">
-          Régions
-          <input type="radio" id="regions" name="mode" :value="1" v-model="mode">
-        </label>
-        <label for="departements">
-          Départements
-          <input type="radio" id="departements" name="mode" :value="2" v-model="mode">
-        </label>
-        <label for="communes">
-          Communes
-          <input type="radio" id="communes" name="mode" :value="3" v-model="mode">
-        </label>
-      </div>
-
-      <div class="control data">
-        <label for="update">
-          Auto update
-          <input type="checkbox" id="update" name="update" v-model="autoUpdate">
-        </label>
-
-        <label for="updateInterval" v-show="autoUpdate">
-          Frequency ({{ intervalTime }} ms)
-          <input type="range" id="updateInterval" name="updateInterval"  min="0" max="3000" step="200" v-model="intervalTime">
-        </label>
-
-      </div>
-
-      <div class="control actions">
-        <button type="button" id="clearAll" @click.prevent.stop="clearAll()">CLEAR ALL</button>
-        <button type="button" id="clearGraphic" @click.prevent.stop="clearGraphic()">CLEAR GRAPHIC</button>
-        <button type="button" id="init" @click.prevent.stop="initGraph()">INIT GRAPH</button>
-        <button type="button" id="draw" @click.prevent.stop="draw()" :disabled="!canDraw">DRAW</button>
-      </div>
-    </div>
-
+  <div ref="container" class="map-container">
+    <h1>{{$t('partial_results')}}</h1>
+    <p class="info">{{$t(status.u.map_explanation)}}</p>
+    <vote-map-controls></vote-map-controls>
     <div class="wrapper-graph">
-      <router-view :topofile="topofile" :width="width" :height="height" :displayMesh="displayMesh" :displayArea="displayArea" :projection="projection" :mode="mode"></router-view>
+      <div class="map-container">
+        <vote-map ref="map" :width="mapWidth" :height="mapHeight" class="vote-map"></vote-map>
+        <search></search>
+      </div>
+      <podium-context ref="podium" class="podium-context"></podium-context>
     </div>
+    <participation-context></participation-context>
   </div>
+
 </template>
 
 <script>
+import VoteMap from 'components/map/VoteMap'
+import VoteMapControls from 'components/map/VoteMapControls'
+import PodiumContext from 'components/map/PodiumContext'
+import ParticipationContext from 'components/map/ParticipationContext'
+import Search from 'components/map/Search'
+import { mapGetters, mapActions } from 'vuex'
+import { FETCH_MAP_UPDATE } from 'src/store/action-types'
+import { MAP_FETCH_INTERVAL } from 'utils/constants'
 import bus from 'emitter'
-import * as STATUS from 'utils/graphicStatus'
-import * as FILES_CONFIG from 'utils/filesConfig'
-import * as politicsList from 'utils/politicsConfig'
-import communesList from 'assets/insee.list.json'
-
+import { REFRESH_WINNERS } from 'emitter/config'
 export default {
   name: 'MapContainer',
 
+  components: {VoteMap, PodiumContext, ParticipationContext, VoteMapControls, Search},
+
   data () {
     return {
-      status: {CODE: null, TEXT: null},
-
-      topofile: FILES_CONFIG.communesFull,
-
-      width: 1000,
-      height: 480,
-
-      // projection: 'geoConicConformalFrance',
-      projection: 'mercator',
-      mode: 0,
-      displayMesh: true,
-      displayArea: true,
-
-      autoUpdate: false,
-      intervalTime: 3000,
-
-      politics: {}
+      mapWidth: 0,
+      mapHeight: 0
     }
   },
 
 
   computed: {
-    canDraw () {
-      return this.status.CODE >= STATUS.GRAPHIC_READY.CODE
-    }
-  },
-
-
-  created () {
-    bus.$on('statusUpdate', this.updateStatus)
-
-    Object.keys(politicsList).map( p => {
-      this.politics[p] = politicsList[p]
+    ...mapGetters({
+      status: 'status_data_file',
+      isLoaded: 'isLoaded'
     })
   },
 
-
   watch: {
-    displayMesh () {
-      this.status = STATUS.LOADED
-    },
-
-
-    displayArea () {
-      this.status = STATUS.LOADED
-    },
-
-
-    projection () {
-      bus.$emit('clearAll')
-    },
-
-    autoUpdate (active) {
-      if(active) {
-        this.createInterval()
-      } else {
-        this.deleteInterval()
-      }
-    },
-
-    intervalTime () {
-      console.log('intervalTime');
-      this.deleteInterval()
-      this.createInterval()
+    isLoaded () {
+      this.regularUpdate()
     }
   },
 
-
-  methods: {
-    updateStatus (newStatus) {
-      this.status = newStatus
-    },
-
-
-    createInterval () {
-      this.interval = setInterval(
-        _ => {
-          this.sendResult()
-        },
-        this.intervalTime
-      )
-    },
-
-
-    deleteInterval () {
-      clearInterval(this.interval)
-    },
-
-
-    createFakeResult () {
-      if(communesList.length === 1) this.deleteInterval()
-      let randomIndex = this.randomIndex(communesList.length)
-      let commune = communesList[randomIndex]
-      communesList.splice(randomIndex, 1)
-
-      let politicsKeys = Object.keys(this.politics)
-
-      return {
-        mode: STATUS.MODE.TOWN,
-        selected: commune,
-        winner: politicsKeys[this.randomIndex(politicsKeys.length)]
-      }
-    },
-
-
-    sendResult () {
-      bus.$emit('result', this.createFakeResult())
-    },
-
-
-    randomIndex (length) {
-      return Math.floor( Math.random() * length)
-    },
-
-
-    clearAll () {
-      bus.$emit('clearAll')
-    },
-
-
-    clearGraphic () {
-      bus.$emit('clearGraphic')
-    },
-
-
-    initGraph () {
-      bus.$emit('initGraph')
-    },
-
-
-    draw () {
-      bus.$emit('draw')
-    },
+  mounted () {
+    this.setupListener()
+    this.$nextTick(_ => {
+      this.handleResize()
+    })
   },
 
+  beforeDestroy () {
+    this.removeListener()
+  },
 
-  destroyed () {
-    bus.$off('statusUpdate', this.updateStatus)
+  methods: {
+    ...mapActions({
+      fetchMapUpdate: FETCH_MAP_UPDATE
+    }),
+
+    regularUpdate () {
+      if (this.intervalId) clearInterval(this.intervalId)
+
+      this.intervalId = setInterval(_ => {
+        console.log('UPDATE')
+        this.fetchMapUpdate()
+        bus.$emit(REFRESH_WINNERS)
+      }, MAP_FETCH_INTERVAL * 1000)
+    },
+
+
+    setupListener () {
+      window.addEventListener('resize', this.handleResize)
+    },
+
+    removeListener () {
+      window.removeEventListener('resize', this.handleResize)
+    },
+
+    // Needed because canvas need to know his width.
+    handleResize () {
+      this.$nextTick(_ => {
+        let difference = this.$refs.container.clientWidth - this.$refs.podium.$el.clientWidth
+
+        this.mapWidth = difference === 0 ? this.$refs.container.clientWidth : difference
+
+        let x = window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth
+        if (x <= 500) this.mapHeight = 284
+        else if (x <= 980) this.mapHeight = 480
+        else this.mapHeight = 610
+      })
+    }
   }
 }
 </script>
 
-<style lang="scss">
-@import "~utils/global";
-
-.status{
-  display: inline-block;
-  min-width: 150px;
-  padding: 10px;
-  background: $grey-neutral-5;
-  color: white;
+<style lang="scss" scoped>
+@import "~styles/global";
+h1{
+  text-align: left;
+}
+.podium-context{
+  margin-top: 24px;
+}
+.map-container{
+  position: relative;
 }
 
-.controls{
-  padding-bottom: 2em;
-  border-bottom: 2px solid $grey-neutral-4;
-
-  .control + .control{
-    margin-top: 1.5em;
-  }
-}
-
-.graphic{
-  padding: 15px;
-  background: $grey-neutral-1;
-
-  svg, canvas{
-    background: transparent;
-    border: 1px solid $grey-neutral-2;
+@media #{$break-medium} {
+  .wrapper-graph{
+    display: flex;
   }
 
-  .mesh{
-    fill: none;
-    stroke: $yellow-sun-5;
-    stroke-width: 0.2px;
+  .podium-context{
+    min-width: 33.33%;
+    margin-top: 0px;
   }
 
-  .area{
-    fill: $grey-neutral-6;
-    stroke: none;
-  }
 }
 </style>

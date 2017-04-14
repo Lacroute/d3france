@@ -1,4 +1,4 @@
-import localeApi from 'api/localeApi'
+import localeApi from 'api/spreadsheet/locale'
 import * as types from '../mutation-types'
 import * as status from '../status-types'
 import Vue from 'vue'
@@ -31,7 +31,6 @@ const actions = {
         store.dispatch('updateLocale', store.state.queued)
       },
       () => {
-
         store.commit(types.LOCALE_ERROR)
       }
     )
@@ -50,10 +49,10 @@ const actions = {
       } catch (e) {
         store.dispatch('fetchDbs', store.getters.filesLocalized, true)
       }
-
     }
-  },
+  }
 }
+
 
 const mutations = {
 

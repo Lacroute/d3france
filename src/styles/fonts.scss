@@ -1,0 +1,110 @@
+$font_path: '~assets/fonts/';
+
+// *********** //
+// SOURCE SANS //
+// ITALIC
+@font-face{
+  font-family    : 'Source Sans Pro';
+  src            : url($font_path +'SourceSansPro-Italic.eot'); /* IE9 Compat; Modes */
+  src            : url($font_path +'SourceSansPro-Italic.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */ url($font_path +'SourceSansPro-Italic.woff2') format('woff2'), /* Modern Browsers */ url($font_path +'SourceSansPro-Italic.woff') format('woff'); /* Modern Browsers */
+  font-style     : italic, oblique;
+  font-weight    : 400;
+  text-rendering : optimizeLegibility;
+}
+// REGULAR
+@font-face{
+  font-family    : 'Source Sans Pro';
+  src            : url($font_path +'SourceSansPro-Regular.eot'); /* IE9 Compat; Modes */
+  src            : url($font_path +'SourceSansPro-Regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */ url($font_path +'SourceSansPro-Regular.woff2') format('woff2'), /* Modern Browsers */ url($font_path +'SourceSansPro-Regular.woff') format('woff'); /* Modern Browsers */
+  font-style     : normal;
+  font-weight    : 400;
+  text-rendering : optimizeLegibility;
+}
+// SEMI BOLD
+@font-face{
+  font-family    : 'Source Sans Pro';
+  src            : url($font_path +'SourceSansPro-Semibold.eot'); /* IE9 Compat; Modes */
+  src            : url($font_path +'SourceSansPro-Semibold.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */ url($font_path +'SourceSansPro-Semibold.woff2') format('woff2'), /* Modern Browsers */ url($font_path +'SourceSansPro-Semibold.woff') format('woff'); /* Modern Browsers */
+  font-style     : normal;
+  font-weight    : 600;
+  text-rendering : optimizeLegibility;
+}
+// Use "font-family: $source_sans_pro" in your code.
+$source_sans_pro : 'Source Sans Pro', sans-serif;
+// [END] SOURCE SANS //
+// ***************** //
+
+
+// ********** //
+// ROBOTOMONO //
+// REGULAR
+@font-face{
+  font-family    : 'RobotoMono';
+  src            : url($font_path +'RobotoMono-Regular.eot'); /* IE9 Compat; Modes */
+  src            : url($font_path +'RobotoMono-Regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */ url($font_path +'RobotoMono-Regular.woff2') format('woff2'), /* Modern Browsers */ url($font_path +'RobotoMono-Regular.woff') format('woff'); /* Modern Browsers */
+  font-style     : normal;
+  font-weight    : 400;
+  text-rendering : optimizeLegibility;
+}
+$roboto_mono : 'RobotoMono', sans-serif;
+// [END] ROBOTOMONO //
+// **************** //
+
+
+// ************ //
+// UI ESSENTIAL //
+// REGULAR
+@font-face{
+  font-family    : 'UI essential';
+  src            : url($font_path +'UIessential-Normal.eot'); /* IE9 Compat; Modes */
+  src            : url($font_path +'UIessential-Normal.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */ url($font_path +'UIessential-Normal.woff2') format('woff2'), /* Modern Browsers */ url($font_path +'UIessential-Normal.woff') format('woff'); /* Modern Browsers */
+  font-style     : normal;
+  font-weight    : 400;
+  text-rendering : optimizeLegibility;
+}
+.UI-icon{
+  font-family: "UI essential";
+  text-decoration: none;
+  text-rendering: optimizeLegibility;
+  white-space: nowrap;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  -moz-font-feature-settings: "liga=1";
+  -moz-font-feature-settings: "liga";
+  -ms-font-feature-settings: "liga" 1;
+  -o-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  font-size: 16px;
+}
+.UI-icon{
+  font-family: "UI essential";
+  text-decoration: none;
+  text-rendering: optimizeLegibility;
+  white-space: nowrap;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  -moz-font-feature-settings: "liga=1";
+  -moz-font-feature-settings: "liga";
+  -ms-font-feature-settings: "liga" 1;
+  -o-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  font-size: 16px;
+}
+.UI-info:before {content:"\2139";}
+.UI-twitter:before {content:"\f099";}
+.UI-close-alt:before {content:"\2715";}
+.UI-slide-left:before {content: "\f104"}
+.UI-slide-right:before {content: "\f105"}
+.UI-pause-video:before {content:"\f145";}
+.UI-play-video:before {content:"\f144";}
+.UI-play:before {content:"\25b6";}
+.UI-audio-on-alt:before {content:"\f15b";}
+.UI-audio-off-alt:before {content:"\f254";}
+.UI-captions:before {content:"\f25c";}
+.UI-menu:before {content:"\f039";}
+.UI-warning:before {content:"\26ae";}
+.UI-mosaic:before {content:"\e9a0";}
+.UI-list:before {content:"\e9a1";}
+.UI-search:before {content:"\f002";}
+// [END] UI ESSENTIAL //
+// ****************** //

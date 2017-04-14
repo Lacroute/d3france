@@ -1,10 +1,7 @@
 <template lang="html">
-  <div class="layout">
+  <div id="layout">
     <header>
-      <ul class="three">
-        <li><router-link :to="{name: 'canvas'}">Canvas</router-link></li>
-        <!-- <li><router-link :to="{name: 'svg'}">Svg</router-link></li> -->
-      </ul>
+      <live-indicator></live-indicator>
     </header>
 
     <section class="body">
@@ -12,16 +9,18 @@
     </section>
 
     <footer>
-
     </footer>
 
   </div>
 </template>
 
 <script>
+import LiveIndicator from 'components/LiveIndicator'
 
 export default {
   name: 'Layout',
+
+  components: {LiveIndicator},
 
   data () {
     return {
@@ -31,37 +30,29 @@ export default {
 
   methods: {
     test () {
-      this.$router.push({ name: this.$route.name, params: { lang: this.lang }})
+      this.$router.push({ name: this.$route.name, params: { lang: this.lang } })
     }
   }
 }
 </script>
 
-<style lang="scss" scoped>
-.layout{
-  padding: 60px 0 20px;
-}
+<style lang="scss">
+@import "~styles/global";
 
-section.body{
-  margin-top: 40px
-}
+#layout{
+  padding: 0 0 50px;
+  margin: 0 18px;
 
-.three {
-  list-style: none;
-  margin: 0 10px;
-  padding: 0;
-  display: inline-block;
-
-  li {
-    display: inline-block;
+  h1{
+    text-align: left;
+    font-size: 1.1em;
+    margin:  10px 0 1.1em;
   }
-
-  li + li {
-    margin-left: 10px;
+  .info{
+    text-align: left;
+    font-size: 13px;
+    color: $grey-cold-6;
+    margin-bottom: 1rem;
   }
-
-}
-.lang-selector{
-  display: inline-block;
 }
 </style>
