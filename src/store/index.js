@@ -4,6 +4,10 @@ import * as actions from './actions'
 import * as getters from './getters'
 import locales from './modules/locales'
 import dbs from './modules/dbs'
+import zoomstate from './modules/zoomstate'
+import selection from './modules/selection'
+import results from './modules/results'
+import userActions from './modules/userActions'
 
 Vue.use(Vuex)
 
@@ -14,7 +18,11 @@ export default new Vuex.Store({
   getters,
   modules: {
     locales,
-    dbs
+    dbs,
+    zoomstate,
+    selection,
+    results,
+    userActions
   },
   strict: debug
 })

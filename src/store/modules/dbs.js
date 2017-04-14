@@ -1,7 +1,8 @@
 import * as types from '../mutation-types'
+import { INIT_AFTER_LOADING, FETCH_ESTIMATED, FETCH_REAL } from '../action-types'
 import * as status from '../status-types'
-import storage from 'utils/configStorage'
-import dbApi from 'api/dbApi'
+import storage from 'api/spreadsheet/data/config'
+import data from 'api/spreadsheet/data'
 import Vue from 'vue'
 
 const state = {
@@ -13,12 +14,12 @@ const getters = {
 
   // Return a set of files in the desired locale, if there isn't, throw an error.
   filesLocalized: (state, getters, fallbackLang = false) => {
-    return Object.entries(state.storage).map( property => {
+    return Object.entries(state.storage).map(property => {
       let localized = {}
       localized.property = property[0]
-      if (property[1][getters.currentLocale])
+      if (property[1][getters.currentLocale]) {
         localized.filename = property[1][getters.currentLocale]
-      else {
+      } else {
         console.warn(`No ${property[0]} config found for locale '${getters.currentLocale}', serve fallbackLang '${Vue.config.fallbackLang}' instead.`)
         localized.filename = property[1][Vue.config.fallbackLang]
       }
@@ -35,22 +36,22 @@ const actions = {
   fetchDbs (store, localized) {
     store.commit(types.LOAD_DB)
 
-    Promise.all(localized.map( file => dbApi.fetchDB(file)))
-    .then( response => {
-      response.map( result => {
+    Promise.all(localized.map(file => data.fetchDB(file)))
+    .then(response => {
+      response.map(result => {
         let payload = {
-          type     : types.UPDATE_DB,
-          property : result.property,
-          data     : result.data
+          type: types.UPDATE_DB,
+          property: result.property,
+          data: result.data
         }
 
         let uniques = store.getters[result.property].u
-        if(uniques) {
-          Object.keys(uniques).map( u_get => {
-            let found = result.data.find( db_row => {
-              return u_get === db_row.title
+        if (uniques) {
+          Object.keys(uniques).map(uGet => {
+            let found = result.data.find(dbRow => {
+              return uGet === dbRow.title
             })
-            uniques[u_get] = found.value
+            uniques[uGet] = found.value
           })
 
           payload.u = uniques
@@ -59,10 +60,62 @@ const actions = {
         store.commit(payload)
       })
 
-      store.commit(types.DB_LOADED)
+      store.dispatch(INIT_AFTER_LOADING)
     })
-    .catch( error => {
+    .catch(error => {
       store.commit(types.LOAD_DB_ERROR, error)
+    })
+  },
+
+
+  [FETCH_ESTIMATED] ({state, commit, getters}) {
+    let file = state.storage.estimated_data_file[getters.currentLocale]
+
+    return data.fetchDB({property: 'estimated_data_file', filename: file})
+    .then(response => {
+      response.data = response.data.map(c => {
+        for (var item in c) {
+          if (c.hasOwnProperty(item)) {
+            let institue = item.split('-')
+            if (institue.length === 2) {
+              if (c.estimations === undefined) c.estimations = {}
+              if (c.estimations[institue[0]] === undefined) c.estimations[institue[0]] = {}
+              c.estimations[institue[0]][institue[1]] = c[item]
+              delete c[item]
+            }
+          }
+        }
+        let max = Object.keys(c.estimations).reduce((a, b) => {
+          if (c.estimations[b].max === null) return a
+          return c.estimations[a].max > c.estimations[b].max ? a : b
+        })
+        c.estimations[max].isMax = true
+        let min = Object.keys(c.estimations).reduce((a, b) => {
+          if (c.estimations[b].min === null) return a
+          return c.estimations[a].min < c.estimations[b].min ? a : b
+        })
+        c.estimations[min].isMin = true
+        return c
+      })
+      commit({
+        type: types.UPDATE_DB,
+        property: response.property,
+        data: response.data
+      })
+    })
+  },
+
+
+  [FETCH_REAL] ({state, commit, getters}) {
+    let file = state.storage.totalization_data_file[getters.currentLocale]
+
+    return data.fetchDB({property: 'totalization_data_file', filename: file})
+    .then(response => {
+      commit({
+        type: types.UPDATE_DB,
+        property: response.property,
+        data: response.data
+      })
     })
   }
 }
@@ -75,7 +128,7 @@ const mutations = {
 
   // When a db is loaded, replace the data entry in the storage object.
   [types.UPDATE_DB] (state, dbObject) {
-    if(state.storage[dbObject.property].data) state.storage[dbObject.property].data = dbObject.data
+    if (state.storage[dbObject.property].data) state.storage[dbObject.property].data = dbObject.data
     if (dbObject.u) state.storage[dbObject.property].u = dbObject.u
   },
 
@@ -96,12 +149,12 @@ const mutations = {
 //   data: Array[],
 //   u: {}
 // }
-Object.entries(storage).map( entry => {
+Object.entries(storage).map(entry => {
   Vue.set(getters, entry[0], () => {
     let gttrs = {name: entry[0], data: entry[1].data}
-    if(entry[1].u) {
+    if (entry[1].u) {
       gttrs.u = {}
-      Object.entries(entry[1].u).map( row => {
+      Object.entries(entry[1].u).map(row => {
         gttrs.u[row[0]] = row[1]
       })
     }

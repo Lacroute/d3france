@@ -1,0 +1,4 @@
+build/*.js
+config/*.js
+src/supported/*.js
+src/utils/googleAnalytics.js
